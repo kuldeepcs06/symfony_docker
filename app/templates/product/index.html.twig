@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Quotes{% endblock %}
+{% block title %}Products{% endblock %}
 
 {% block body %}
     <style>
@@ -11,23 +11,23 @@
     </style>
 
     <div class="wrapper">
-        <h1>Great Quotes</h1>
+        <h1>Great Products</h1>
         <table class="table table-striped table-hover table-bordered">
             <thead>
             <tr>
                 <th scope="col">#</th>
-                <th scope="col">Quote</th>
-                <th scope="col">Historian</th>
-                <th scope="col">Year</th>
+                <th scope="col">Entity</th>
+                <th scope="col">Category</th>
+                <th scope="col">Name</th>
             </tr>
             </thead>
             <tbody>
-            {% for quote in quotes %}
+            {% for product in products %}
                 <tr>
                     <td>{{ loop.index }}</td>
-                    <td>{{ quote.quote }}</td>
-                    <td>{{ quote.historian }}</td>
-                    <td>{{ quote.year }}</td>
+                    <td>{{ product.CategoryName }}</td>
+                    <td>{{ product.sku }}</td>
+                    <td>{{ product.name }}</td>
                 </tr>
             {% endfor %}
             </tbody>
