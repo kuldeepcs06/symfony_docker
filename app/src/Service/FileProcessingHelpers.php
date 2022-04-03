@@ -3,7 +3,6 @@
 namespace App\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Encoder\XmlEncoder;
@@ -11,6 +10,7 @@ use Symfony\Component\Serializer\Encoder\CsvEncoder;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use App\Entity\Product;
+use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 
 class FileProcessingHelpers {
 
@@ -19,40 +19,72 @@ class FileProcessingHelpers {
 
     CONST FILE_CSV = 'csv';
     CONST LOCAL_FILE = 'data.csv';
+    CONST REMOTE_FILE = 'coffee_feed_trimmed.xml';
+    CONST DB_BATCH_COUNT = 1000;
 
-    private $ftp_details = ['host' => 'transport.productsup.io/', 'username' => 'pupDev', 'password' => 'pupDev2018', 'file_name' => 'coffee_feed_trimmed.xml'];
-
-    public function __construct($projectDir, HttpClientInterface $client, EntityManagerInterface $entityManager) {
+    /**
+     * defined constructor with required parametes
+     *
+     * @param $params get configuration params from env
+     * @param $entityManager entity manager
+     * @return void
+     */
+    public function __construct(ContainerBagInterface $params, EntityManagerInterface $entityManager) {
         $this->entityManager = $entityManager;
         $this->serializer = new Serializer([new ObjectNormalizer()], [new XmlEncoder(), new CsvEncoder()]);
-        $this->client = $client;
         $this->filesystem = new Filesystem();
-        $this->projectDir = $projectDir;
+        $this->params = $params;
     }
 
+    /**
+     * Get the request to execute file with params
+     *
+     * @param $storageMode store in CSV or in database
+     * @param $rawData array from input file
+     * @return response string
+     */
     public function createData($storageMode, $rawData) {
         $products = $rawData['item'];
-        $stockBooksRepo = $this->entityManager->getRepository(Product::class);
-        $newRecord = 0;
-        $existedRecord = 0;
         if ($storageMode == self::FILE_CSV) {
             $this->filesystem->dumpFile(self::LOCAL_FILE, $this->serializer->encode($products, 'csv'));
             $successString = sprintf("CSV file %s created successfully", self::LOCAL_FILE);
         } else {
-            foreach ($products as $product) {
-                if ($stockBooksRepo->findBy(['entity_id' => $product['entity_id']])) {
-                    $existedRecord++;
-                    continue;
-                }
-                yield $newRecord++;
-                $this->insertBookItem($product);
-            }
-            $successString = "$existedRecord record exists, $newRecord records added";
+            $successString = $this->insertInBatch($products);
         }
         $this->entityManager->flush();
         return $successString;
     }
 
+    /**
+     * Logic to check DB data and insert in batches
+     *
+     * @param array of data
+     * @return response string
+     */
+    public function insertInBatch($products) {
+        $newRecord = $existedRecord = 0;
+        $stockBooksRepo = $this->entityManager->getRepository(Product::class);
+        foreach ($products as $product) {
+            if ($stockBooksRepo->findBy(['entity_id' => $product['entity_id']])) {
+                $existedRecord++;
+                continue;
+            }
+            $newRecord++;
+            $this->insertBookItem($product);
+            if (($newRecord % self::DB_BATCH_COUNT) == 0) {
+                $this->entityManager->flush();
+                $this->entityManager->clear();
+            }
+        }
+        return sprintf("%s record exists, %s records added", $existedRecord, $newRecord);
+    }
+
+    /**
+     * Insert Data into DB
+     *
+     * @param array of data
+     * @return void
+     */
     public function insertBookItem($product) {
         $newProductItem = new Product();
         $newProductItem->setEntityId($product['entity_id']);
@@ -80,9 +112,15 @@ class FileProcessingHelpers {
         }
     }
 
+    /**
+     * Get data from local file and decode it to Array
+     *
+     * @param Local file from public folder
+     * @return array
+     */
     public function getXmlRowsAsArrays($pocessFile) {
         try {
-            $pocessFile = $this->projectDir . $pocessFile;
+            $pocessFile = $this->params->get('app.project_dir') . $pocessFile;
             if (!$this->filesystem->exists($pocessFile)) {
                 throw new \Exception("unable to access local file! $pocessFile", 503);
             }
@@ -92,10 +130,17 @@ class FileProcessingHelpers {
         }
     }
 
+    /**
+     * Get data from FTP server and decode it to Array
+     *
+     * @param void
+     * @return array
+     */
     public function accessRemotefile(): array {
         $finder = new Finder();
         try {
-            foreach ($finder->files()->in(sprintf('ftp://%s:%s@%s', $this->ftp_details['username'], $this->ftp_details['password'], $this->ftp_details['host']))->name($this->ftp_details['file_name']) as $file) {
+            $ftp_path = sprintf('ftp://%s:%s@%s', $this->params->get('app.ftp_user'), $this->params->get('app.ftp_password'), $this->params->get('app.ftp_host'));
+            foreach ($finder->files()->in($ftp_path)->name(self::REMOTE_FILE) as $file) {
                 $content = file_get_contents($file->getPathname());
             }
             $content = $this->serializer->decode($content, 'xml');

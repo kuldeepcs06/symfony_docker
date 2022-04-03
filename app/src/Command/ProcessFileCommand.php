@@ -13,12 +13,12 @@ use App\Service\FileProcessingHelpers;
 class ProcessFileCommand extends Command {
 
     protected static $defaultName = 'app-process-file';
-    private FileProcessingHelpers $fileProcessingHelpres;
+    private FileProcessingHelpers $fileProcessingHelpers;
 
     CONST PROCESS_REMOTE = 'remote';
 
-    public function __construct(FileProcessingHelpers $fileProcessingHelpres, LoggerInterface $logger) {
-        $this->fileProcessingHelpres = $fileProcessingHelpres;
+    public function __construct(FileProcessingHelpers $fileProcessingHelpers, LoggerInterface $logger) {
+        $this->fileProcessingHelpers = $fileProcessingHelpers;
         $this->logger = $logger;
         parent::__construct();
     }
@@ -37,11 +37,11 @@ class ProcessFileCommand extends Command {
         $pocessFile = $input->getOption('file');
         try {
             if ($processMode == self::PROCESS_REMOTE) {
-                $fileData = $this->fileProcessingHelpres->accessRemotefile();
+                $fileData = $this->fileProcessingHelpers->accessRemotefile();
             } else {
-                $fileData = $this->fileProcessingHelpres->getXmlRowsAsArrays($pocessFile);
+                $fileData = $this->fileProcessingHelpers->getXmlRowsAsArrays($pocessFile);
             }
-            $responseString = $this->fileProcessingHelpres->createData($storageMode, $fileData);
+            $responseString = $this->fileProcessingHelpers->createData($storageMode, $fileData);
             $this->logger->info($responseString, [$storageMode, $processMode]);
             $io->success($responseString);
             return Command::SUCCESS;
