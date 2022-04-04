@@ -47,7 +47,7 @@ class FileProcessingHelpers {
         $products = $rawData['item'];
         if ($storageMode == self::FILE_CSV) {
             $this->filesystem->dumpFile(self::LOCAL_FILE, $this->serializer->encode($products, 'csv'));
-            $successString = sprintf("CSV file %s created successfully", self::LOCAL_FILE);
+            $successString = sprintf("Success! CSV file %s created successfully", self::LOCAL_FILE);
         } else {
             $successString = $this->insertInBatch($products);
         }
@@ -76,7 +76,7 @@ class FileProcessingHelpers {
                 $this->entityManager->clear();
             }
         }
-        return sprintf("%s record exists, %s records added", $existedRecord, $newRecord);
+        return sprintf("Success! %s record exists, %s records added", $existedRecord, $newRecord);
     }
 
     /**

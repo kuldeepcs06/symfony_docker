@@ -16,6 +16,9 @@ This codebase is cover below feature.</p>
 <li class="has-line-data" data-line-start="7" data-line-end="8">
 <p class="has-line-data" data-line-start="7" data-line-end="8">Factory code pattern with Dependency injection</p>
 </li>
+<li class="has-line-data" data-line-start="8" data-line-end="8">
+<p class="has-line-data" data-line-start="8" data-line-end="8">PHP Unit test cases</p>
+</li>
 </ol>
 <p class="has-line-data" data-line-start="10" data-line-end="11">Clone Git Repo: <a href="https://github.com/kuldeepcs06/symfony_docker.git">https://github.com/kuldeepcs06/symfony_docker.git</a></p>
 <p class="has-line-data" data-line-start="12" data-line-end="13">Build the containers:</p>
@@ -44,3 +47,5 @@ Response:<br>
 /usr/bin/docker-compose exec php symfony console app-process-file --storage=database --mode=local<br>
 Response:<br>
 [OK] 3449 record exists, 0 records added</p>
+
+<p class="has-line-data" data-line-start="8" data-line-end="8">run PHPUnit test cases using /usr/bin/docker-compose exec php ./vendor/bin/phpunit</p>

@@ -42,8 +42,9 @@ class ProcessFileCommand extends Command {
                 $fileData = $this->fileProcessingHelpers->getXmlRowsAsArrays($pocessFile);
             }
             $responseString = $this->fileProcessingHelpers->createData($storageMode, $fileData);
+            
             $this->logger->info($responseString, [$storageMode, $processMode]);
-            $io->success($responseString);
+            $io->success(trim($responseString));
             return Command::SUCCESS;
         } catch (\Exception $ex) {
             $io->error(sprintf('Error Message: %s |Error code: %s', $ex->getMessage(), $ex->getCode()));
